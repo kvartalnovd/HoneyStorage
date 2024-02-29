@@ -1,4 +1,4 @@
-module github.com/kvartalnovd/foreverstore
+module github.com/kvartalnovd/HoneyStorage
 
 go 1.21.5
 
