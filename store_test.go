@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -48,6 +49,10 @@ func TestStore(t *testing.T) {
 		t.Error(err)
 	}
 
+	if ok := s.Has(key); !ok {
+		t.Errorf("expected to have key %q", key)
+	}
+
 	r, err := s.Read(key)
 	if err != nil {
 		t.Error(err)
@@ -57,6 +62,7 @@ func TestStore(t *testing.T) {
 	if string(b) != string(data) {
 		t.Errorf("want %s have %s", data, b)
 	}
+	fmt.Println(string(b))
 
 	s.Delete(key)
 }
