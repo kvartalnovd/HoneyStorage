@@ -34,7 +34,7 @@ func CASPathTransformFunc(key string) PathKey {
 	}
 }
 
-type PathTransportFunc func(string) PathKey
+type PathTranformFunc func(string) PathKey
 
 type PathKey struct {
 	PathName string
@@ -56,7 +56,7 @@ func (p PathKey) FullPath() string {
 type StoreOpts struct {
 	// Root is the folder name of the root, containing all the folder/files of the system.
 	Root              string
-	PathTransformFunc PathTransportFunc
+	PathTransformFunc PathTranformFunc
 }
 
 var DefaultPathTransformFunc = func(key string) PathKey {
@@ -103,6 +103,10 @@ func (s *Store) Delete(key string) error {
 
 	firstPathNameWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.FirstPathName())
 	return os.RemoveAll(firstPathNameWithRoot)
+}
+
+func (s *Store) Write(key string, r io.Reader) error {
+	return s.writeStream(key, r)
 }
 
 func (s *Store) Read(key string) (io.Reader, error) {
