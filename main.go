@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"log"
+	"time"
 
 	"github.com/kvartalnovd/HoneyStorage/p2p"
 )
@@ -11,7 +13,6 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 		ListenAddr:    listenAddr,
 		HandshakeFunc: p2p.NOPHandshakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
-		// TODO: onPeer func
 	}
 	tcpTransport := p2p.NewTCPTransport(tcpTransportOpts)
 
@@ -19,10 +20,11 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 		StorageRoot:      listenAddr + "_network",
 		PathTranformFunc: CASPathTransformFunc,
 		Transport:        tcpTransport,
-		BootstrapNodes:   nodes, 
+		BootstrapNodes:   nodes,
 	}
 
 	s := NewFileServer(fileServerOpts)
+
 	tcpTransport.OnPeer = s.OnPeer
 
 	return s
@@ -36,5 +38,13 @@ func main() {
 		log.Fatal(s1.Start())
 	}()
 
-	s2.Start()
+	time.Sleep(2 * time.Second)
+	
+	go s2.Start()
+	time.Sleep(2 * time.Second)
+
+	data := bytes.NewReader([]byte("my big data file here!"))
+	s2.StoreData("myprivatedata", data)
+
+	select {}
 }
