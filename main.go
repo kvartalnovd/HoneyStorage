@@ -2,11 +2,15 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
 	"github.com/kvartalnovd/HoneyStorage/p2p"
 )
+
+const networkPostfix = "_network"
 
 func makeServer(listenAddr string, nodes ...string) *FileServer {
 	tcpTransportOpts := p2p.TCPTransportOpts{
@@ -18,7 +22,7 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 
 	fileServerOpts := FileServerOpts{
 		EncKey:           newEncryptionKey(),
-		StorageRoot:      listenAddr + "_network",
+		StorageRoot:      listenAddr + networkPostfix,
 		PathTranformFunc: CASPathTransformFunc,
 		Transport:        tcpTransport,
 		BootstrapNodes:   nodes,
@@ -34,29 +38,38 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 func main() {
 	s1 := makeServer(":3000", "")
 	s2 := makeServer(":4000", ":3000")
+	s3 := makeServer(":5000", ":4000", ":3000")
 
-	go func() {
-		log.Fatal(s1.Start())
-	}()
+	go func() { log.Fatal(s1.Start()) }()
+
+	time.Sleep(800 * time.Millisecond)
+
+	go func() { log.Fatal(s2.Start()) }()
 
 	time.Sleep(2 * time.Second)
 
-	go s2.Start()
+	go s3.Start()
 	time.Sleep(2 * time.Second)
 
-	data := bytes.NewReader([]byte("my big data file here!"))
-	s2.Store("coolPicture.jpg", data)
-	time.Sleep(5 * time.Millisecond)
+	for i := 0; i < 20; i++ {
+		key := fmt.Sprintf("picture_%d.png", i)
+		data := bytes.NewReader([]byte("my big data file here!"))
+		s3.Store(key, data)
 
-	// r, err := s2.Get("coolPicture.jpg")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+		if err := s3.store.Delete(s3.ID, key); err != nil {
+			log.Fatal(err)
+		}
 
-	// b, err := ioutil.ReadAll(r)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+		r, err := s3.Get(key)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	// fmt.Println(string(b))
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(string(b))
+	}
 }
